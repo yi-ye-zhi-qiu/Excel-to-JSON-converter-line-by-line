@@ -30,22 +30,22 @@ var process_wb = (function() {
 	var to_json_linebyline = function to_json_linebyline(wb){
 		var sheet = wb.Sheets['Sheet1'];
 		var result = {};
-    var row, rowNum, colNum;
-    var range = X.utils.decode_range(sheet['!ref']);
-    for(rowNum = range.s.r; rowNum <= range.e.r-2; rowNum++){
-       row = [];
-        for(colNum=range.s.c; colNum<=range.e.c; colNum++){
-           var nextCell = sheet[
-              X.utils.encode_cell({r: rowNum, c: colNum})
-           ];
-           if( typeof nextCell === 'undefined' ){
-              row.push(void 0);
-           } else row.push(nextCell.w);
-        }
-        result[nextCell.v] = row;
-    }
-    return JSON.stringify(result, 2, 2);
- }
+		var row, rowNum, colNum;
+		var range = X.utils.decode_range(sheet['!ref']);
+		for(rowNum = range.s.r; rowNum <= range.e.r-2; rowNum++){
+			row = [];
+			for(colNum=range.s.c; colNum<=range.e.c; colNum++){
+			   var nextCell = sheet[
+			      X.utils.encode_cell({r: rowNum, c: colNum})
+			   ];
+			   if( typeof nextCell === 'undefined' ){
+			      row.push(void 0);
+			   } else row.push(nextCell.w);
+			}
+			result[nextCell.v] = row;
+		    }
+		    return JSON.stringify(result, 2, 2);
+		}
 
 
 	return function process_wb(wb) {
