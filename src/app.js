@@ -4,7 +4,6 @@
 /* use webpack, need build tool for JS in order to use require for client-side code*/
 
 var X = typeof require !== "undefined" && require('../node_modules/xlsx') || XLSX;
-//if(typeof define === 'function' && define.amd) define(function() { if(!XLSX.version) make_xlsx_lib(XLSX); return XLSX; });
 
 var global_wb;
 
@@ -25,69 +24,59 @@ var process_wb = (function() {
 			var roa = X.utils.sheet_to_json(workbook.Sheets[sheetName]);
 			if(roa.length) result[sheetName] = roa;
 		});
-	return JSON.stringify(result, 2, 2);
+		return JSON.stringify(result, 2, 2);
 	};
 
-	var to_csv = function to_csv(workbook) {
-		var result = [];
-		workbook.SheetNames.forEach(function(sheetName) {
-			var csv = X.utils.sheet_to_csv(workbook.Sheets[sheetName]);
-			if(csv.length){
-				result.push("SHEET: " + sheetName);
-				result.push("");
-				result.push(csv);
-			}
-		});
-		return result.join("\n");
-	};
+	var to_json_linebyline = function to_json_linebyline(wb){
+		var sheet = wb.Sheets['Sheet1'];
+		var result = {};
+    var row, rowNum, colNum;
+    var range = X.utils.decode_range(sheet['!ref']);
+    for(rowNum = range.s.r; rowNum <= range.e.r-2; rowNum++){
+       row = [];
+        for(colNum=range.s.c; colNum<=range.e.c; colNum++){
+           var nextCell = sheet[
+              X.utils.encode_cell({r: rowNum, c: colNum})
+           ];
+           if( typeof nextCell === 'undefined' ){
+              row.push(void 0);
+           } else row.push(nextCell.w);
+        }
+        result[nextCell.v] = row;
+    }
+    return JSON.stringify(result, 2, 2);
+ }
 
-	var to_fmla = function to_fmla(workbook) {
-		var result = [];
-		workbook.SheetNames.forEach(function(sheetName) {
-			var formulae = X.utils.get_formulae(workbook.Sheets[sheetName]);
-			if(formulae.length){
-				result.push("SHEET: " + sheetName);
-				result.push("");
-				result.push(formulae.join("\n"));
-			}
-		});
-		return result.join("\n");
-	};
-
-	var to_html = function to_html(workbook) {
-		HTMLOUT.innerHTML = "";
-		workbook.SheetNames.forEach(function(sheetName) {
-			var htmlstr = X.write(workbook, {sheet:sheetName, type:'string', bookType:'html'});
-			HTMLOUT.innerHTML += htmlstr;
-		});
-		return "";
-	};
 
 	return function process_wb(wb) {
 		global_wb = wb;
 		var output = "";
-		switch(get_format()) {
-			case "form": output = to_fmla(wb); break;
-			case "html": output = to_html(wb); break;
-			case "ctvs": output = to_csv(wb); break;
-			default: output = to_json(wb);
+		var domlinebyline = document.getElementById("uselinebyline");
+		if(domlinebyline.checked == false){
+			console.log("using to_json...");
+			output = to_json(wb);
+		}
+		if(domlinebyline.checked == true) {
+			console.log("using to_json_linebyline...")
+			output = to_json_linebyline(wb);
 		}
 		if(OUT.innerText === undefined) OUT.textContent = output;
 		else OUT.innerText = output;
-		if(typeof console !== 'undefined') console.log("output process_wb", new Date());
-	};
+		if(typeof console !== 'undefined') console.log("output ", new Date());
+
+		/*var datastr="data:text/json;charset=utf-8," + encodeURIComponent(output);
+		var exportName = 'hello'
+		var downloadAnchorNode = document.createElement('a');
+		downloadAnchorNode.setAttribute("href",     datastr);
+		downloadAnchorNode.setAttribute("download", exportName + ".json");
+		document.body.appendChild(downloadAnchorNode); // required for firefox
+		downloadAnchorNode.click();
+		downloadAnchorNode.remove();*/
+	}
+
 })();
 
 var setfmt = window.setfmt = function setfmt() { if(global_wb) process_wb(global_wb); };
-
-var b64it = window.b64it = (function() {
-	var tarea = document.getElementById('b64data');
-	return function b64it() {
-		if(typeof console !== 'undefined') console.log("onload", new Date());
-		var wb = X.read(tarea.value, {type:'base64', WTF:false});
-		process_wb(wb);
-	};
-})();
 
 var do_file = (function() {
 	var rABS = typeof FileReader !== "undefined" && (FileReader.prototype||{}).readAsBinaryString;
