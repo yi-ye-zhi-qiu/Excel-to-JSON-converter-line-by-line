@@ -1,7 +1,6 @@
 /* xlsx.js (C) 2013-present SheetJS -- http://sheetjs.com */
 const XLSX = require('../node_modules/xlsx')
 
-//path to xlsx: C:\Users\立安\webpack-demo\node_modules\xlsx
 
 postMessage({t:"ready"});
 
