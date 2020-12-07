@@ -9,7 +9,6 @@ var X = typeof require !== "undefined" && require('../node_modules/xlsx') || XLS
 var JSZip = require('../node_modules/jszip/dist/jszip.min.js')
 var FileSaver = require('../node_modules/file-saver/dist/FileSaver.js')
 
-
 var global_wb;
 
 var process_wb = (function() {
@@ -53,13 +52,19 @@ var process_wb = (function() {
 						if(colNum != 0){
 							var previous_header = sheet[X.utils.encode_cell({r: 0, c: colNum-1})].w
 							if(this_header != previous_header){
-								//if a new row 0 entry is detected create a new object, like an overhang, to store all data under its name in
 								console.log('new obj')
 								new_object = {}
 								entries_for_new = {}
 								entries_for_new[sub_header] = eachCol
-								new_object[this_header] = entries_for_new
-								results.push(new_object);
+
+								if(this_header === "REPORTER" || "EVENT" || "DRUG" || "CAUSALITY"){
+									new_object[this_header] = [entries_for_new]
+									results.push(new_object)
+								} else {
+									new_object[this_header] = entries_for_new
+									results.push(new_object);
+								}
+
 							} else {
 								console.log('same obj')
 								new_object = entries_for_new
