@@ -2,17 +2,17 @@
 /*jshint browser:true */
 /*global XLSX */
 /* use webpack, need build tool for JS in order to use require for client-side code*/
-/* need to use webpack to load FileSaver, JSZip and run client-side without script tags in html */
 
 var X = typeof require !== "undefined" && require('../node_modules/xlsx') || XLSX;
+//require('../node_modules/jszip/dist/jszip.min.js')
 
 var JSZip = require('../node_modules/jszip/dist/jszip.min.js')
 var FileSaver = require('../node_modules/file-saver/dist/FileSaver.js')
 
+
 var global_wb;
 
 var process_wb = (function() {
-	
 	var OUT = document.getElementById('out');
 	var HTMLOUT = document.getElementById('htmlout');
 
@@ -33,38 +33,61 @@ var process_wb = (function() {
 	};
 
 	var to_json_linebyline = function to_json_linebyline(wb){
-	    //NOTICE: must be named Sheet1...will find a way around that soon enough.
-	    var zip = new JSZip();
+			var zip = new JSZip();
 	    var sheet = wb.Sheets['Sheet1'];
-	    var results = [];
 	    var range = X.utils.decode_range(sheet['!ref']);
-	    for(let rowNum = (range.s.r+1); rowNum <= range.e.r--; rowNum++){
+	    for(let rowNum = range.s.r+3; rowNum <= range.e.r--; rowNum++){
+				 var results = [];
 	       let thisRow = {},
-	           thisNode = '';
+				 		 thisNode = '';
 	       for(let colNum=range.s.c; colNum<=range.e.c; colNum++){
-	          var thisHeader = sheet[X.utils.encode_cell({r: 0, c: colNum})].w
-	          var thisCell = sheet[X.utils.encode_cell({r: rowNum, c: colNum})].w
-	          if(colNum === 0){
-	            thisNode = thisCell;
-	          }
-	          thisRow[thisHeader] = thisCell;
-	       }
-	       thisResult = {};
-	       thisResult[thisNode] = [thisRow]
-	       results.push(thisResult)
-
-	       if(rowNum === 1){
-		   console.log('The point of this program is to return a zip folder full of JSON-ified excel data rows, as an example, the JSON of row ' + rowNum + ' will show as: \n' + JSON.stringify(thisResult, 2, 2));
-	       }
-		   zip.file(''.concat(rowNum) + '.json', JSON.stringify(thisResult, 2, 2))
-	       }
-
-		zip.generateAsync({type: "blob"})
-		  .then(function(content) {
-			saveAs(content, "result_" + new Date() + ".zip");
-		   });
-		return 'full unsplit JSON: \n' + JSON.stringify(results, 2, 2)
+					 	let eachCol = {},
+						    label = 'label',
+						    value = 'value';
+					 	var sub_header = sheet[X.utils.encode_cell({r: 1, c: colNum})].w
+						var sub_sub_header = sheet[X.utils.encode_cell({r: 2, c: colNum})].w
+						var thisCell = sheet[X.utils.encode_cell({r: rowNum, c: colNum})].w
+						eachCol[label] = sub_sub_header;
+						eachCol[value] = thisCell;
+						var this_header = sheet[X.utils.encode_cell({r: 0, c: colNum})].w
+						if(colNum != 0){
+							var previous_header = sheet[X.utils.encode_cell({r: 0, c: colNum-1})].w
+							if(this_header != previous_header){
+								//if a new row 0 entry is detected create a new object, like an overhang, to store all data under its name in
+								console.log('new obj')
+								new_object = {}
+								entries_for_new = {}
+								entries_for_new[sub_header] = eachCol
+								new_object[this_header] = entries_for_new
+								results.push(new_object);
+							} else {
+								console.log('same obj')
+								new_object = entries_for_new
+								entries_for_new[sub_header] = eachCol
+							//	results.push(new_object);
+							}
+							}	else {
+								var previous_header = sheet[X.utils.encode_cell({r: 0, c: 0})].w
+								new_object = {}
+								entries_for_new = {}
+								entries_for_new[sub_header] = eachCol
+								new_object[this_header] = entries_for_new
+								results.push(new_object);
+						}
+				 }
+				 zip.file(''.concat(rowNum) + '.json', JSON.stringify(results, 2, 2))
+				if(rowNum === 3){
+					console.log('The point of this program is to return a zip folder full of JSON-ified excel data rows, as an example, the JSON of row ' + rowNum + ' will show as: \n' + JSON.stringify(results, 2, 2));
+			  }
+	    }
+			zip.generateAsync({type: "blob"})
+			.then(function(content) {
+				saveAs(content, "result_" + new Date() + ".zip");
+			});
+			return 'full unsplit JSON: \n' + JSON.stringify(results, 2, 2)
 	}
+
+
 
 	return function process_wb(wb) {
 		global_wb = wb;
