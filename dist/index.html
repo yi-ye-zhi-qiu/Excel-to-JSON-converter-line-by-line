@@ -7,45 +7,93 @@
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 <title>Webpack SheetJS Demo</title>
 <style>
+html {
+  --bck-color: #FFF;
+  --ft-color: #000;
+  --link-color: blue;
+  --drop-color: #f1f8e9;
+}
+html.dark {
+  --bck-color: #000;
+  --ft-color: #FFF;
+  --link-color: #DDD;
+  --drop-color: #768763;
+}
+body {
+  background: var(--bck-color);
+  color: var(--ft-color);
+  max-width: 40em;
+  padding: 5% 3%;
+  margin: 0 auto;
+  font:10pt bold, "Vollkorn";
+  text-align: center;
+}
+a:link,
+a:visited,
+a:active {
+  color: var(--link-color);
+}
 #drop{
-	border:2px dashed #bbb;
-	-moz-border-radius:5px;
-	-webkit-border-radius:5px;
-	border-radius:5px;
-	padding:25px;
-	text-align:center;
-	font:20pt bold,"Vollkorn";color:#bbb
+  border:2px dashed #bbb;
+  -moz-border-radius:5px;
+  -webkit-border-radius:5px;
+  border-radius:5px;
+  padding: 30px;
+  text-align:center;
+  font:20pt bold,"Vollkorn";color:#bbb;
+  overflow-wrap: break-word !important;
 }
-#b64data{
-	width:100%;
+#drop:hover{
+  background: var(--drop-color);
 }
-a { text-decoration: none }
+@media (max-width:768px) {
+  #drop{
+    padding: 40px;
+  }
+}
+a:hover{
+  color: #C5E1A5;
+  box-shadow: 0 1rem 1rem rgba(1,1,0,0.3);
+  transform: translateY(-0.5rem)
+}
+a{
+  text-decoration: none;
+  text-align: center;
+}
+h1{
+  padding: 1px;
+}
+#out{
+  text-align: left;
+}
+.invisible{
+  opacity: 0;
+  font: 2pt;
+  padding: 0 0 0 0;
+}
 </style>
 </head>
 <body>
-<pre>
-<b><a href="http://sheetjs.com">SheetJS Data Preview Live Demo</a></b>
-(Base64 text works back to IE6; drag and drop works back to IE10)
-<b>My edits: </b>Reformatted the tutorial to have src & dist folders, and added a "line-by-line JSON export to zip folder" option.
-
-<a href="https://github.com/SheetJS/js-xlsx">Source Code Repo</a>
-<a href="https://github.com/SheetJS/js-xlsx/issues">Issues?  Something look weird?  Click here and report an issue</a>
-Output Format: <select name="format" onchange="setfmt()">
-<option value="csv"> CSV</option>
+<script src="https://kit.fontawesome.com/3fe16e504a.js" crossorigin="anonymous"></script>
+<h1>Excel -> JSON</h1>
+<span id="toggle-switch" title="Toggle Dark Theme">
+<i class="fas fa-moon" id="toggle-switch"></i>
+</span>
+<h2>Liam's <a class="githubicon" href="https://github.com/yi-ye-zhi-qiu"><i class="fa fa-github"></i></a></h2></br>
+<a href="https://github.com/yi-ye-zhi-qiu/Excel-to-JSON-converter-line-by-line/blob/main/src/app.js">Source Code Repo</a></br>
+<a href="https://github.com/SheetJS/js-xlsx">Forked from this</a>
+<p class="invisible">Output Format: <select name="format" onchange="setfmt()"></p>
 <option value="json" selected> JSON</option>
-<option value="form"> FORMULAE</option>
-<option value="html"> HTML</option>
-</select><br />
-<div id="drop">Drop a spreadsheet file here to see/download sheet data</div>
+</select><br/><br/>
+<div id="drop">Drop a spreadsheet file here</div><br><br><br>
 <input type="file" name="xlfile" id="xlf" /> ... or click here to select a file
-
-<textarea id="b64data">... or paste a base64-encoding here</textarea>
-<input type="button" id="dotext" value="Click here to process the base64 text" onclick="b64it();"/><br />
-<b>Advanced Demo Options:</b>
-Use Web Workers: (not recommended, not supported on Chrome) <input type="checkbox" name="useworker">
-Use readAsBinaryString: (when available) <input type="checkbox" name="userabs" >
-Use line-by-line JSON export: <input type="checkbox" id="uselinebyline" checked>
-</pre>
+<br><br><br>
+<b>Advanced  Options:</b>
+Use line-by-line JSON export: <input type="checkbox" id="uselinebyline" checked><br>
+v.alpha	(09-Dec-2020)
+<!-- these are from the forked webpage and I can't delete without causing errors in do_file-->
+<p class="invisible"> Use Web Workers: (when available) <input disabled type="checkbox" name="useworker">
+Use readAsBinaryString: (when available) <input disabled type="checkbox" name="userabs"></p>
 <pre id="out"></pre>
 <div id="htmlout"></div>
 <br />
