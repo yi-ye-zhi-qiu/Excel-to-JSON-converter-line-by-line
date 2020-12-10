@@ -1,7 +1,7 @@
 /* xlsx.js (C) 2013-present SheetJS -- http://sheetjs.com */
 /*jshint browser:true */
 /*global XLSX */
-/* use webpack, need build tool for JS in order to use require for client-side code*/
+/* use webpack, need build tool for JS in order to use require for client-side code (users do not need packages) & to write files from browser*/
 
 var X = typeof require !== "undefined" && require('../node_modules/xlsx') || XLSX;
 //require('../node_modules/jszip/dist/jszip.min.js')
@@ -14,7 +14,6 @@ var global_wb;
 var process_wb = (function() {
 	var OUT = document.getElementById('out');
 	var HTMLOUT = document.getElementById('htmlout');
-
 	var get_format = (function() {
 		var radios = document.getElementsByName( "format" );
 		return function() {
@@ -33,17 +32,17 @@ var process_wb = (function() {
 
 	var to_json_linebyline = function to_json_linebyline(wb){
 			var zip = new JSZip();
-	    var sheet = wb.Sheets['Sheet1'];
-	    var range = X.utils.decode_range(sheet['!ref']);
-	    for(let rowNum = range.s.r+3; rowNum <= range.e.r--; rowNum++){
-				 var results = [];
-	       let thisRow = {},
-				 		 thisNode = '';
-	       for(let colNum=range.s.c; colNum<=range.e.c; colNum++){
-					 	let eachCol = {},
-						    label = 'label',
-						    value = 'value';
-					 	var sub_header = sheet[X.utils.encode_cell({r: 1, c: colNum})].w
+			var sheet = wb.Sheets['Sheet1'];
+			var range = X.utils.decode_range(sheet['!ref']);
+			for(let rowNum = range.s.r+3; rowNum <= range.e.r--; rowNum++){
+				 var results = {};
+				 let thisRow = {},
+						 thisNode = '';
+				 for(let colNum=range.s.c; colNum<=range.e.c; colNum++){
+						let eachCol = {},
+								label = 'label',
+								value = 'value';
+						var sub_header = sheet[X.utils.encode_cell({r: 1, c: colNum})].w
 						var sub_sub_header = sheet[X.utils.encode_cell({r: 2, c: colNum})].w
 						var thisCell = sheet[X.utils.encode_cell({r: rowNum, c: colNum})].w
 						eachCol[label] = sub_sub_header;
@@ -52,48 +51,47 @@ var process_wb = (function() {
 						if(colNum != 0){
 							var previous_header = sheet[X.utils.encode_cell({r: 0, c: colNum-1})].w
 							if(this_header != previous_header){
-								console.log('new obj')
 								new_object = {}
 								entries_for_new = {}
 								entries_for_new[sub_header] = eachCol
-
-								if(this_header === "REPORTER" || "EVENT" || "DRUG" || "CAUSALITY"){
-									new_object[this_header] = [entries_for_new]
-									results.push(new_object)
-								} else {
+								const wantbrackets = ['row1needbrackets?']
+								if(wantbrackets.some(needbrackets => needbrackets === this_header) === false){
+									//if wantbrackers === false... create new_object as {entries_for_new}
 									new_object[this_header] = entries_for_new
-									results.push(new_object);
+									Object.assign(results, new_object)
+								} else {
+									//if wantbrackets === true... create new_object as [{entries_for_new}]
+									new_object[this_header] = [entries_for_new]
+									Object.assign(results, new_object)
 								}
-
-							} else {
-								console.log('same obj')
+							} else { //if this_header === previous_header, just add entries_for_new to the same new_object
 								new_object = entries_for_new
 								entries_for_new[sub_header] = eachCol
-							//	results.push(new_object);
 							}
-							}	else {
+						}	else {
+							  //for column index-0, colNum-1 will return a negative value, so we have to hard-code c: 0
 								var previous_header = sheet[X.utils.encode_cell({r: 0, c: 0})].w
 								new_object = {}
 								entries_for_new = {}
 								entries_for_new[sub_header] = eachCol
+								Object.assign(entries_for_new, hard_coded_general_variables)
 								new_object[this_header] = entries_for_new
-								results.push(new_object);
+								Object.assign(results, new_object)
 						}
 				 }
-				 zip.file(''.concat(rowNum) + '.json', JSON.stringify(results, 2, 2))
+				zip.file(''.concat(rowNum) + '.json', JSON.stringify(results, 2, 2))
 				if(rowNum === 3){
 					console.log('The point of this program is to return a zip folder full of JSON-ified excel data rows, as an example, the JSON of row ' + rowNum + ' will show as: \n' + JSON.stringify(results, 2, 2));
-			  }
-	    }
+				}
+			}
+
 			zip.generateAsync({type: "blob"})
 			.then(function(content) {
 				saveAs(content, "result_" + new Date() + ".zip");
 			});
-			return 'full unsplit JSON: \n' + JSON.stringify(results, 2, 2)
-	}
 
-
-
+			return 'example output JSON (will always be last row of data in input Excel): \n' + JSON.stringify(results, 2, 2)
+}
 	return function process_wb(wb) {
 		global_wb = wb;
 		var output = "";
@@ -110,11 +108,8 @@ var process_wb = (function() {
 		else OUT.innerText = output;
 		if(typeof console !== 'undefined') console.log("output ", new Date());
 	}
-
 })();
-
 var setfmt = window.setfmt = function setfmt() { if(global_wb) process_wb(global_wb); };
-
 var do_file = (function() {
 	var rABS = typeof FileReader !== "undefined" && (FileReader.prototype||{}).readAsBinaryString;
 	var domrabs = document.getElementsByName("userabs")[0];
@@ -152,7 +147,6 @@ var do_file = (function() {
 		else reader.readAsArrayBuffer(f);
 	};
 })();
-
 (function() {
 	var drop = document.getElementById('drop');
 	if(!drop.addEventListener) return;
@@ -173,10 +167,43 @@ var do_file = (function() {
 	drop.addEventListener('dragover', handleDragover, false);
 	drop.addEventListener('drop', handleDrop, false);
 })();
-
 (function() {
 	var xlf = document.getElementById('xlf');
 	if(!xlf.addEventListener) return;
 	function handleFile(e) { do_file(e.target.files); }
 	xlf.addEventListener('change', handleFile, false);
 })();
+
+const DARK_MODE = 'dark';
+const LIGHT_MODE = 'light';
+const THEME = 'mode';
+
+document.addEventListener(
+  'DOMContentLoaded', (event) => {
+    applyTheme();
+    const toggleSwitch = document.getElementById('toggle-switch');
+    toggleSwitch.onclick = function() {
+      let currentMode = localStorage.getItem(THEME);
+      localStorage.setItem(
+        THEME,
+        currentMode === DARK_MODE ? LIGHT_MODE : DARK_MODE
+      );
+      applyTheme();
+    }
+  }
+);
+
+function applyTheme() {
+  let html = document.documentElement;
+  let currentMode = localStorage.getItem(THEME);
+  if (currentMode === DARK_MODE) {
+    html.classList.add(DARK_MODE);
+    document.getElementById('toggle-switch').innerHTML =
+      '<i class="fas fa-sun"></i>';
+  }
+  else {
+    html.classList.remove(DARK_MODE);
+    document.getElementById('toggle-switch').innerHTML =
+      '<i class="fas fa-moon"></i>';
+  }
+}
